@@ -32,36 +32,44 @@ class _GroceryListState extends State<GroceryList> {
     // convert to a dart object
     final Map<String, dynamic> listData = json.decode(response.body);
 
-    final List<GroceryItem> _loadedItems = [];
-    for(final item in listData.entries) {
-      final category = categories.entries.firstWhere((catItem) => catItem.value.title == item.value['category']).value;
+    final List<GroceryItem> loadedItems = [];
+    for (final item in listData.entries) {
+      final category = categories.entries
+          .firstWhere(
+              (catItem) => catItem.value.title == item.value['category'])
+          .value;
 
-      _loadedItems.add(GroceryItem(id: item.key, name: item.value['name'], quantity: item.value['quantity'], category: category));
+      loadedItems.add(GroceryItem(
+          id: item.key,
+          name: item.value['name'],
+          quantity: item.value['quantity'],
+          category: category));
     }
     setState(() {
-      _groceryItems = _loadedItems;
+      _groceryItems = loadedItems;
     });
-
-
   }
 
   void _addItem() async {
-    await Navigator.of(context).push<GroceryItem>(
+    final newItem = await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(
         builder: (ctx) => const NewItem(),
       ),
     );
 
-    _loadItems();
+    if (newItem == null) return;
 
+    setState(() {
+      _groceryItems.add(newItem);
+    });
   }
 
   void _removeItem(GroceryItem item) {
     setState(() {
       _groceryItems.remove(item);
     });
-
   }
+
   @override
   Widget build(BuildContext context) {
     Widget content = const Center(
@@ -73,11 +81,10 @@ class _GroceryListState extends State<GroceryList> {
         itemCount: _groceryItems.length,
         itemBuilder: (context, index) => Dismissible(
           onDismissed: (direction) {
-              _removeItem(_groceryItems[index]);
+            _removeItem(_groceryItems[index]);
           },
           key: ValueKey(_groceryItems[index].id),
           child: ListTile(
-
             title: Text(_groceryItems[index].name),
             leading: Container(
               width: 24,
