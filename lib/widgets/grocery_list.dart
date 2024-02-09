@@ -19,6 +19,7 @@ class _GroceryListState extends State<GroceryList> {
   List<GroceryItem> _groceryItems = [];
 
   var _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -32,6 +33,20 @@ class _GroceryListState extends State<GroceryList> {
         'shopping-list.json');
 
     final response = await http.get(url);
+
+    // status code > 400 problem
+    if (response.statusCode >= 400) {
+      setState(() {
+        _error = 'Failed to fetch data, please try again later.';
+      });
+    }
+
+    if (response.body == 'null') {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
     // convert to a dart object
     final Map<String, dynamic> listData = json.decode(response.body);
 
@@ -68,10 +83,21 @@ class _GroceryListState extends State<GroceryList> {
     });
   }
 
-  void _removeItem(GroceryItem item) {
-    setState(() {
-      _groceryItems.remove(item);
-    });
+  void _removeItem(GroceryItem item) async {
+    final index = _groceryItems.indexOf(item);
+
+    final url = Uri.https(
+        'flutter-prep-b38c9-default-rtdb.europe-west1.firebasedatabase.app',
+        'shopping-list/${item.id}.json');
+
+    final response = await http.delete(url);
+
+    if (response.statusCode >= 400) {
+      // show optional message
+      setState(() {
+        _groceryItems.insert(index, item);
+      });
+    }
   }
 
   @override
@@ -106,6 +132,14 @@ class _GroceryListState extends State<GroceryList> {
         ),
       );
     }
+
+    // Checking error and showing message
+    if (_error != null) {
+      content = Center(
+        child: Text(_error!),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Groceries'),
